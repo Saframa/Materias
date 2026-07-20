@@ -1,0 +1,13 @@
+{
+  "name": "materias-civil",
+  "version": "1.0.0",
+  "description": "Tracker de materias - Ingeniería Civil Perfil Construcción",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "electron": "^35.7.5"
+  }
+}
