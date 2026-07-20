@@ -4,10 +4,29 @@
   "description": "Tracker de materias - Ingeniería Civil Perfil Construcción",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder --win portable",
+    "build:installer": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.safra.materiascivil",
+    "productName": "Materias Civil",
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "directories": {
+      "output": "release"
+    }
   },
   "dependencies": {
     "better-sqlite3": "^11.9.1",
     "electron": "^35.7.5"
+  },
+  "devDependencies": {
+    "electron-builder": "^26.15.3"
   }
 }
