@@ -2,6 +2,8 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const { app } = require('electron');
 
+const fs = require('fs');
+
 let db;
 
 function getDbPath() {
@@ -10,7 +12,25 @@ function getDbPath() {
 }
 
 function initDatabase() {
-    db = new Database(getDbPath());
+    const dbPath = getDbPath();
+
+    // Si la base de datos no existe en AppData, intentamos copiar la base de datos por defecto
+    if (!fs.existsSync(dbPath)) {
+        // En producción, los archivos pueden estar dentro de app.asar o extraResources
+        // Buscamos el archivo 'default.sqlite' en la misma carpeta que database.js
+        const defaultDbPath = path.join(__dirname, 'default.sqlite');
+        
+        if (fs.existsSync(defaultDbPath)) {
+            try {
+                fs.copyFileSync(defaultDbPath, dbPath);
+                console.log('Base de datos por defecto copiada exitosamente.');
+            } catch (err) {
+                console.error('Error al copiar la base de datos por defecto:', err);
+            }
+        }
+    }
+
+    db = new Database(dbPath);
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');
 

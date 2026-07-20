@@ -1,6 +1,7 @@
 {
   "name": "materias-civil",
   "version": "1.0.0",
+  "author": "Antigravity",
   "description": "Tracker de materias - Ingeniería Civil Perfil Construcción",
   "main": "main.js",
   "scripts": {
@@ -23,10 +24,10 @@
     }
   },
   "dependencies": {
-    "better-sqlite3": "^11.9.1",
-    "electron": "^35.7.5"
+    "better-sqlite3": "^11.9.1"
   },
   "devDependencies": {
+    "electron": "^35.7.5",
     "electron-builder": "^26.15.3"
   }
 }
