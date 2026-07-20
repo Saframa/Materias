@@ -12,4 +12,13 @@ contextBridge.exposeInMainWorld('api', {
     cambiarEstado: (id) => ipcRenderer.invoke('estado:cambiar', id),
     calcularCreditos: () => ipcRenderer.invoke('creditos:calcular'),
     resetearEstados: () => ipcRenderer.invoke('estado:resetear'),
+
+    // Áreas
+    crearArea: (nombre) => ipcRenderer.invoke('area:crear', nombre),
+    listarAreas: () => ipcRenderer.invoke('area:listar'),
+    calcularCreditosPorArea: () => ipcRenderer.invoke('creditos:porArea'),
+
+    // Perfiles
+    crearPerfil: (nombre) => ipcRenderer.invoke('perfil:crear', nombre),
+    listarPerfiles: () => ipcRenderer.invoke('perfil:listar'),
 });

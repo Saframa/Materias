@@ -51,7 +51,11 @@ ipcMain.handle('materia:crear', (event, datos) => {
             datos.previasAprobadas,
             datos.previasCurso,
             datos.previasNoTener,
-            datos.creditosRequeridos
+            datos.creditosRequeridos,
+            datos.semestre,
+            datos.tipo,
+            datos.areaId,
+            datos.perfilId
         );
         return { success: true, id };
     } catch (error) {
@@ -68,7 +72,11 @@ ipcMain.handle('materia:editar', (event, datos) => {
             datos.previasAprobadas,
             datos.previasCurso,
             datos.previasNoTener,
-            datos.creditosRequeridos
+            datos.creditosRequeridos,
+            datos.semestre,
+            datos.tipo,
+            datos.areaId,
+            datos.perfilId
         );
         return { success: true };
     } catch (error) {
@@ -124,6 +132,48 @@ ipcMain.handle('estado:resetear', () => {
     try {
         const materias = database.resetearEstados();
         return { success: true, materias };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('area:crear', (event, nombre) => {
+    try {
+        const id = database.crearArea(nombre);
+        return { success: true, id };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('area:listar', () => {
+    try {
+        return { success: true, areas: database.listarAreas() };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('perfil:crear', (event, nombre) => {
+    try {
+        const id = database.crearPerfil(nombre);
+        return { success: true, id };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('perfil:listar', () => {
+    try {
+        return { success: true, perfiles: database.listarPerfiles() };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('creditos:porArea', () => {
+    try {
+        return { success: true, desglose: database.calcularCreditosPorArea() };
     } catch (error) {
         return { success: false, error: error.message };
     }

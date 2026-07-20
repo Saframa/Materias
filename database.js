@@ -39,7 +39,13 @@ function initDatabase() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL UNIQUE,
             creditos INTEGER NOT NULL DEFAULT 0,
-            estado TEXT NOT NULL DEFAULT 'NO_DISPONIBLE'
+            estado TEXT NOT NULL DEFAULT 'NO_DISPONIBLE',
+            semestre TEXT DEFAULT 'AMBOS',
+            tipo TEXT DEFAULT 'OBLIGATORIA',
+            area_id INTEGER,
+            perfil_id INTEGER,
+            FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL,
+            FOREIGN KEY (perfil_id) REFERENCES perfiles(id) ON DELETE SET NULL
         );
 
         CREATE TABLE IF NOT EXISTS previas (
@@ -51,7 +57,40 @@ function initDatabase() {
             FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE,
             FOREIGN KEY (previa_id) REFERENCES materias(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS areas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL UNIQUE
+        );
+
+        CREATE TABLE IF NOT EXISTS perfiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL UNIQUE
+        );
     `);
+
+    // Migración para bases de datos existentes
+    try {
+        const columns = db.prepare("PRAGMA table_info(materias)").all();
+        const hasArea = columns.some(c => c.name === 'area_id');
+        
+        if (!hasArea) {
+            db.exec(`
+                ALTER TABLE materias ADD COLUMN semestre TEXT DEFAULT 'AMBOS';
+                ALTER TABLE materias ADD COLUMN tipo TEXT DEFAULT 'OBLIGATORIA';
+                ALTER TABLE materias ADD COLUMN area_id INTEGER REFERENCES areas(id) ON DELETE SET NULL;
+                ALTER TABLE materias ADD COLUMN perfil_id INTEGER REFERENCES perfiles(id) ON DELETE SET NULL;
+            `);
+            
+            // Insertar Área por defecto y asignar a materias existentes
+            const info = db.prepare("INSERT OR IGNORE INTO areas (nombre) VALUES ('Área General')").run();
+            const areaGeneralId = info.lastInsertRowid || db.prepare("SELECT id FROM areas WHERE nombre = 'Área General'").get().id;
+            
+            db.prepare("UPDATE materias SET area_id = ?").run(areaGeneralId);
+        }
+    } catch (e) {
+        console.error('Error durante la migración de la DB:', e);
+    }
 
     return db;
 }
@@ -62,16 +101,16 @@ function closeDatabase() {
 
 // ─── Materias CRUD ───
 
-function crearMateria(nombre, creditos, previasAprobadas, previasCurso, previasNoTener, creditosRequeridos) {
+function crearMateria(nombre, creditos, previasAprobadas, previasCurso, previasNoTener, creditosRequeridos, semestre, tipo, areaId, perfilId) {
     const insertMateria = db.prepare(
-        'INSERT INTO materias (nombre, creditos, estado) VALUES (?, ?, ?)'
+        'INSERT INTO materias (nombre, creditos, estado, semestre, tipo, area_id, perfil_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
     );
     const insertPrevia = db.prepare(
         'INSERT INTO previas (materia_id, previa_id, tipo, creditos_requeridos) VALUES (?, ?, ?, ?)'
     );
 
     const transaction = db.transaction(() => {
-        const info = insertMateria.run(nombre, creditos, 'NO_DISPONIBLE');
+        const info = insertMateria.run(nombre, creditos, 'NO_DISPONIBLE', semestre || 'AMBOS', tipo || 'OBLIGATORIA', areaId, perfilId || null);
         const materiaId = info.lastInsertRowid;
 
         // Previas aprobadas
@@ -108,9 +147,9 @@ function crearMateria(nombre, creditos, previasAprobadas, previasCurso, previasN
     return materiaId;
 }
 
-function editarMateria(id, nombre, creditos, previasAprobadas, previasCurso, previasNoTener, creditosRequeridos) {
+function editarMateria(id, nombre, creditos, previasAprobadas, previasCurso, previasNoTener, creditosRequeridos, semestre, tipo, areaId, perfilId) {
     const updateMateria = db.prepare(
-        'UPDATE materias SET nombre = ?, creditos = ? WHERE id = ?'
+        'UPDATE materias SET nombre = ?, creditos = ?, semestre = ?, tipo = ?, area_id = ?, perfil_id = ? WHERE id = ?'
     );
     const deletePrevias = db.prepare(
         'DELETE FROM previas WHERE materia_id = ?'
@@ -120,7 +159,7 @@ function editarMateria(id, nombre, creditos, previasAprobadas, previasCurso, pre
     );
 
     const transaction = db.transaction(() => {
-        updateMateria.run(nombre, creditos, id);
+        updateMateria.run(nombre, creditos, semestre || 'AMBOS', tipo || 'OBLIGATORIA', areaId, perfilId || null, id);
         deletePrevias.run(id);
 
         if (previasAprobadas && previasAprobadas.length > 0) {
@@ -294,6 +333,37 @@ function resetearEstados() {
     return listarMaterias();
 }
 
+// ─── Areas y Perfiles ───
+
+function crearArea(nombre) {
+    const info = db.prepare('INSERT INTO areas (nombre) VALUES (?)').run(nombre);
+    return info.lastInsertRowid;
+}
+
+function listarAreas() {
+    return db.prepare('SELECT * FROM areas ORDER BY nombre').all();
+}
+
+function crearPerfil(nombre) {
+    const info = db.prepare('INSERT INTO perfiles (nombre) VALUES (?)').run(nombre);
+    return info.lastInsertRowid;
+}
+
+function listarPerfiles() {
+    return db.prepare('SELECT * FROM perfiles ORDER BY nombre').all();
+}
+
+function calcularCreditosPorArea() {
+    return db.prepare(`
+        SELECT a.nombre as area, SUM(m.creditos) as total
+        FROM materias m
+        JOIN areas a ON m.area_id = a.id
+        WHERE m.estado = 'APROBADA'
+        GROUP BY a.id
+        ORDER BY total DESC
+    `).all();
+}
+
 module.exports = {
     initDatabase,
     closeDatabase,
@@ -304,6 +374,10 @@ module.exports = {
     obtenerMateria,
     cambiarEstado,
     calcularCreditosAprobados,
-    recalcularTodos,
-    resetearEstados
+    resetearEstados,
+    crearArea,
+    listarAreas,
+    crearPerfil,
+    listarPerfiles,
+    calcularCreditosPorArea
 };

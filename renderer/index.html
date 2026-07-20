@@ -9,7 +9,7 @@
 <body>
 
     <header>
-        <h1 id="titulo-principal">Materias | Créditos: <span id="creditos-display">0</span></h1>
+        <h1 id="titulo-principal">Materias | Créditos: <span id="creditos-display" class="creditos-clickeable" title="Ver desglose por área">0</span></h1>
         <div class="header-actions">
             <button class="btn-header btn-hamburguesa" id="btn-menu" title="Menú">☰</button>
         </div>
@@ -54,7 +54,15 @@
                 </div>
 
                 <div class="barra-busqueda">
-                    <input type="search" id="input-buscar" placeholder="🔍 Buscar materia...">
+                    <input type="search" id="input-buscar" placeholder="🔍 Buscar materia por nombre...">
+                    <select id="filtro-area" class="select-girlie filtro-select">
+                        <option value="">Todas las Áreas</option>
+                    </select>
+                    <select id="filtro-semestre" class="select-girlie filtro-select">
+                        <option value="">Ambos Semestres</option>
+                        <option value="1">Primer Semestre</option>
+                        <option value="2">Segundo Semestre</option>
+                    </select>
                 </div>
 
                 <div id="materias-container"></div>
@@ -76,7 +84,46 @@
                             <label for="form-creditos">Créditos</label>
                             <input type="number" id="form-creditos" required min="0" step="1" placeholder="Ej: 10">
                         </div>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="form-semestre">Semestre</label>
+                                <select id="form-semestre" class="select-girlie">
+                                    <option value="AMBOS">Ambos</option>
+                                    <option value="1">Primer Semestre</option>
+                                    <option value="2">Segundo Semestre</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group half">
+                                <label for="form-tipo">Tipo</label>
+                                <select id="form-tipo" class="select-girlie">
+                                    <option value="OBLIGATORIA">Obligatoria</option>
+                                    <option value="OPTATIVA">Optativa</option>
+                                </select>
+                            </div>
+                        </div>
 
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="form-area">Área</label>
+                                <div class="select-with-btn">
+                                    <select id="form-area" class="select-girlie" required>
+                                        <option value="" disabled selected>Seleccioná un área...</option>
+                                    </select>
+                                    <button type="button" class="btn-add-small" id="btn-nueva-area" title="Agregar Nueva Área">➕</button>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group half">
+                                <label for="form-perfil">Perfil (Opcional)</label>
+                                <div class="select-with-btn">
+                                    <select id="form-perfil" class="select-girlie">
+                                        <option value="">Sin perfil específico</option>
+                                    </select>
+                                    <button type="button" class="btn-add-small" id="btn-nuevo-perfil" title="Agregar Nuevo Perfil">➕</button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label>Previas Exoneradas</label>
                             <span class="form-hint">Materias que debés tener exoneradas para cursar esta</span>
@@ -146,6 +193,49 @@
             <div class="popup-actions">
                 <button class="btn-popup btn-cerrar" id="confirm-btn-cancelar">Cancelar</button>
                 <button class="btn-popup btn-eliminar" id="confirm-btn-aceptar">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup Nueva Área -->
+    <div class="popup-overlay" id="popup-nueva-area">
+        <div class="popup">
+            <h2>✨ Nueva Área</h2>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="input-nueva-area">Nombre del Área</label>
+                <input type="text" id="input-nueva-area" placeholder="Ej: Estructuras">
+            </div>
+            <div class="popup-actions">
+                <button class="btn-popup btn-cerrar" id="btn-cancelar-area">Cancelar</button>
+                <button class="btn-popup btn-editar" id="btn-guardar-area">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup Nuevo Perfil -->
+    <div class="popup-overlay" id="popup-nuevo-perfil">
+        <div class="popup">
+            <h2>✨ Nuevo Perfil</h2>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="input-nuevo-perfil">Nombre del Perfil</label>
+                <input type="text" id="input-nuevo-perfil" placeholder="Ej: Hidráulica">
+            </div>
+            <div class="popup-actions">
+                <button class="btn-popup btn-cerrar" id="btn-cancelar-perfil">Cancelar</button>
+                <button class="btn-popup btn-editar" id="btn-guardar-perfil">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup Desglose de Créditos -->
+    <div class="popup-overlay" id="popup-creditos-area">
+        <div class="popup">
+            <h2>📊 Créditos por Área</h2>
+            <div class="popup-content" id="contenido-creditos-area" style="margin-top: 15px; padding: 10px;">
+                <!-- Aquí se inyectan las barras de créditos -->
+            </div>
+            <div class="popup-actions">
+                <button class="btn-popup btn-cerrar" id="btn-cerrar-creditos">Cerrar</button>
             </div>
         </div>
     </div>

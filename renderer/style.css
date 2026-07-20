@@ -165,6 +165,17 @@ header {
     font-weight: 700;
 }
 
+.creditos-clickeable {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    transition: color var(--transition);
+}
+
+.creditos-clickeable:hover {
+    color: var(--color-primario-hover) !important;
+}
+
 .header-actions {
     display: flex;
     align-items: center;
@@ -480,32 +491,57 @@ main {
    🎀 BARRA BUSQUEDA
    ═══════════════════════════════════════════════ */
 .barra-busqueda {
-    margin-bottom: 18px;
+    margin-bottom: 22px;
     display: flex;
     justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px var(--color-sombra);
+    background: var(--color-input-fondo);
+    border: 2px solid var(--color-input-borde);
+    overflow: hidden;
 }
 
 .barra-busqueda input {
-    width: 100%;
-    max-width: 500px;
+    flex: 2;
+    min-width: 200px;
     padding: 12px 20px;
-    border: 2px solid var(--color-input-borde);
-    border-radius: 999px;
-    background: var(--color-input-fondo);
+    border: none;
+    border-right: 2px solid var(--color-input-borde);
+    background: transparent;
     color: var(--color-texto);
     font-size: 0.9rem;
     transition: all var(--transition);
-    box-shadow: 0 2px 8px var(--color-sombra);
 }
 
 .barra-busqueda input::placeholder {
     color: var(--color-texto-secundario);
 }
 
-.barra-busqueda input:focus {
+.barra-busqueda input:focus,
+.barra-busqueda .filtro-select:focus {
     outline: none;
-    border-color: var(--color-input-focus);
-    box-shadow: 0 0 0 4px rgba(232, 145, 178, 0.15), 0 2px 8px var(--color-sombra);
+    background: rgba(232, 145, 178, 0.05);
+}
+
+.filtro-select {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px 16px;
+    border: none;
+    border-right: 2px solid var(--color-input-borde);
+    background: transparent;
+    color: var(--color-texto);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.filtro-select:last-child {
+    border-right: none;
 }
 
 /* ═══════════════════════════════════════════════
@@ -763,10 +799,66 @@ main {
     color: var(--color-texto-secundario);
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.select-girlie:focus {
     outline: none;
     border-color: var(--color-input-focus);
     box-shadow: 0 0 0 4px rgba(232, 145, 178, 0.15);
+}
+
+/* Row & Half */
+.form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.form-group.half {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Select */
+.select-girlie {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--color-input-borde);
+    border-radius: var(--border-radius-sm);
+    background: var(--color-input-fondo);
+    color: var(--color-texto);
+    font-size: 0.9rem;
+    transition: all var(--transition);
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e891b2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+}
+
+/* Select with Button */
+.select-with-btn {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-add-small {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--border-radius-sm);
+    border: none;
+    background: var(--color-primario);
+    color: white;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+}
+
+.btn-add-small:hover {
+    background: var(--color-primario-hover);
+    transform: scale(1.05);
 }
 
 /* Multi-select con checkboxes */

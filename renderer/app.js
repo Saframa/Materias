@@ -2,6 +2,8 @@
 // STATE
 // ═══════════════════════════════════════════════
 let materias = [];
+let areas = [];
+let perfiles = [];
 let vistaActual = 'materias';
 let popupMateriaActual = null;
 let popupTabActual = 'previas';
@@ -17,6 +19,8 @@ const $$ = (sel) => document.querySelectorAll(sel);
 const creditosDisplay = $('#creditos-display');
 const materiasContainer = $('#materias-container');
 const inputBuscar = $('#input-buscar');
+const filtroArea = $('#filtro-area');
+const filtroSemestre = $('#filtro-semestre');
 
 const seccionMaterias = $('#seccion-materias');
 const seccionFormulario = $('#seccion-formulario');
@@ -27,6 +31,10 @@ const formMateriaId = $('#form-materia-id');
 const formNombre = $('#form-nombre');
 const formCreditos = $('#form-creditos');
 const formCreditosReq = $('#form-creditos-req');
+const formSemestre = $('#form-semestre');
+const formTipo = $('#form-tipo');
+const formArea = $('#form-area');
+const formPerfil = $('#form-perfil');
 
 const popupMateria = $('#popup-materia');
 const popupTitulo = $('#popup-titulo');
@@ -41,22 +49,97 @@ const toastEl = $('#toast');
 const navBotones = $$('.navbar-boton[data-vista]');
 const navbar = $('#navbar');
 
+// Modales nuevos
+const popupNuevaArea = $('#popup-nueva-area');
+const inputNuevaArea = $('#input-nueva-area');
+const popupNuevoPerfil = $('#popup-nuevo-perfil');
+const inputNuevoPerfil = $('#input-nuevo-perfil');
+const popupCreditosArea = $('#popup-creditos-area');
+const contenidoCreditosArea = $('#contenido-creditos-area');
+
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
+    await cargarDatosIniciales();
     await cargarMaterias();
     initEventos();
     initModoOscuro();
 });
 
+async function cargarDatosIniciales() {
+    const resAreas = await window.api.listarAreas();
+    if (resAreas.success) {
+        areas = resAreas.areas;
+        poblarSelectAreas();
+    }
+    const resPerfiles = await window.api.listarPerfiles();
+    if (resPerfiles.success) {
+        perfiles = resPerfiles.perfiles;
+        poblarSelectPerfiles();
+    }
+}
+
+function poblarSelectAreas() {
+    formArea.innerHTML = '<option value="" disabled selected>Seleccioná un área...</option>';
+    filtroArea.innerHTML = '<option value="">Todas las Áreas</option>';
+    areas.forEach(a => {
+        formArea.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
+        filtroArea.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
+    });
+}
+
+function poblarSelectPerfiles() {
+    formPerfil.innerHTML = '<option value="">Sin perfil específico</option>';
+    perfiles.forEach(p => {
+        formPerfil.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+    });
+}
+
 async function cargarMaterias() {
     const result = await window.api.listarMaterias();
     if (result.success) {
         materias = result.materias;
+        
+        // Calcular el número total de previas (recursivamente) para cada materia
+        materias.forEach(m => {
+            m.totalPrevias = calcularTotalPrevias(m.id);
+        });
+
+        // Ordenar: primero por cantidad de previas (ascendente), luego alfabéticamente
+        materias.sort((a, b) => {
+            if (a.totalPrevias !== b.totalPrevias) {
+                return a.totalPrevias - b.totalPrevias;
+            }
+            return a.nombre.localeCompare(b.nombre);
+        });
+
         renderMaterias();
         actualizarCreditos();
     }
+}
+
+function calcularTotalPrevias(materiaId) {
+    const requeridas = new Set();
+    const cola = [materiaId];
+    
+    while(cola.length > 0) {
+        const actualId = cola.shift();
+        const m = materias.find(x => x.id === actualId);
+        if (m) {
+            const dependencias = [];
+            if (m.previasAprobadas) dependencias.push(...m.previasAprobadas.map(p => p.id));
+            if (m.previasCurso) dependencias.push(...m.previasCurso.map(p => p.id));
+            
+            for (const dep of dependencias) {
+                if (!requeridas.has(dep)) {
+                    requeridas.add(dep);
+                    cola.push(dep);
+                }
+            }
+        }
+    }
+    return requeridas.size;
 }
 
 async function actualizarCreditos() {
@@ -98,8 +181,14 @@ function initEventos() {
         navbar.classList.toggle('oculto');
     });
 
-    // Búsqueda
+    // Búsqueda y Filtros
     inputBuscar.addEventListener('input', () => {
+        renderMaterias();
+    });
+    filtroArea.addEventListener('change', () => {
+        renderMaterias();
+    });
+    filtroSemestre.addEventListener('change', () => {
         renderMaterias();
     });
 
@@ -172,6 +261,76 @@ function initEventos() {
             filtrarMultiSelect(input);
         });
     });
+
+    // Nuevas Áreas y Perfiles
+    $('#btn-nueva-area').addEventListener('click', () => {
+        inputNuevaArea.value = '';
+        popupNuevaArea.classList.add('visible');
+    });
+
+    $('#btn-cancelar-area').addEventListener('click', () => {
+        popupNuevaArea.classList.remove('visible');
+    });
+
+    $('#btn-guardar-area').addEventListener('click', async () => {
+        const nombre = inputNuevaArea.value.trim();
+        if (!nombre) return;
+        const res = await window.api.crearArea(nombre);
+        if (res.success) {
+            toast('Área agregada');
+            popupNuevaArea.classList.remove('visible');
+            await cargarDatosIniciales();
+            formArea.value = res.id;
+        } else {
+            toast(res.error, true);
+        }
+    });
+
+    $('#btn-nuevo-perfil').addEventListener('click', () => {
+        inputNuevoPerfil.value = '';
+        popupNuevoPerfil.classList.add('visible');
+    });
+
+    $('#btn-cancelar-perfil').addEventListener('click', () => {
+        popupNuevoPerfil.classList.remove('visible');
+    });
+
+    $('#btn-guardar-perfil').addEventListener('click', async () => {
+        const nombre = inputNuevoPerfil.value.trim();
+        if (!nombre) return;
+        const res = await window.api.crearPerfil(nombre);
+        if (res.success) {
+            toast('Perfil agregado');
+            popupNuevoPerfil.classList.remove('visible');
+            await cargarDatosIniciales();
+            formPerfil.value = res.id;
+        } else {
+            toast(res.error, true);
+        }
+    });
+
+    // Desglose de créditos por área
+    $('#creditos-display').addEventListener('click', async () => {
+        const res = await window.api.calcularCreditosPorArea();
+        if (res.success) {
+            let html = '';
+            if (res.desglose.length === 0) {
+                html = '<p style="text-align:center;color:var(--color-texto-secundario)">No hay créditos aprobados todavía.</p>';
+            } else {
+                html = '<ul class="popup-lista">';
+                res.desglose.forEach(item => {
+                    html += `<li><strong>${item.area}</strong>: ${item.total} créditos</li>`;
+                });
+                html += '</ul>';
+            }
+            contenidoCreditosArea.innerHTML = html;
+            popupCreditosArea.classList.add('visible');
+        }
+    });
+
+    $('#btn-cerrar-creditos').addEventListener('click', () => {
+        popupCreditosArea.classList.remove('visible');
+    });
 }
 
 // ═══════════════════════════════════════════════
@@ -205,11 +364,25 @@ function cambiarVista(vista) {
 // RENDER MATERIAS
 // ═══════════════════════════════════════════════
 function renderMaterias() {
-    const filtro = inputBuscar.value.toLowerCase().trim();
+    const filtroNombre = inputBuscar.value.toLowerCase().trim();
+    const areaSel = filtroArea.value;
+    const semestreSel = filtroSemestre.value;
 
     const filtradas = materias.filter(m => {
-        if (!filtro) return true;
-        return m.nombre.toLowerCase().includes(filtro);
+        // Filtro por nombre
+        if (filtroNombre && !m.nombre.toLowerCase().includes(filtroNombre)) return false;
+        
+        // Filtro por área
+        if (areaSel && m.area_id != areaSel) return false;
+        
+        // Filtro por semestre
+        if (semestreSel) {
+            // Si el select pide 1, mostramos '1' o 'AMBOS'
+            // Si el select pide 2, mostramos '2' o 'AMBOS'
+            if (m.semestre !== 'AMBOS' && m.semestre !== semestreSel) return false;
+        }
+
+        return true;
     });
 
     if (materias.length === 0) {
@@ -248,7 +421,7 @@ function renderMaterias() {
                     data-id="${m.id}"
                     title="${m.nombre} - ${estadoTexto}">
                 <span class="materia-nombre">${m.nombre}</span>
-                <span class="materia-creditos">${m.creditos} créditos</span>
+                <span class="materia-creditos">${m.creditos} créditos • ${m.totalPrevias} previas</span>
                 <span class="materia-estado-badge">${estadoTexto}</span>
             </button>
         `;
@@ -406,6 +579,10 @@ function renderPopupContenido() {
 
         popupContenido.innerHTML = html;
     } else if (popupTabActual === 'info') {
+        const area = areas.find(a => a.id === m.area_id)?.nombre || 'Sin área';
+        const perfil = perfiles.find(p => p.id === m.perfil_id)?.nombre || 'General';
+        const semestreStr = m.semestre === 'AMBOS' ? 'Ambos' : (m.semestre === '1' ? 'Primer Semestre' : 'Segundo Semestre');
+
         popupContenido.innerHTML = `
             <div class="popup-info-item">
                 <span class="popup-info-label">Estado</span>
@@ -414,6 +591,22 @@ function renderPopupContenido() {
             <div class="popup-info-item">
                 <span class="popup-info-label">Créditos</span>
                 <span>${m.creditos}</span>
+            </div>
+            <div class="popup-info-item">
+                <span class="popup-info-label">Semestre</span>
+                <span>${semestreStr}</span>
+            </div>
+            <div class="popup-info-item">
+                <span class="popup-info-label">Tipo</span>
+                <span>${m.tipo === 'OBLIGATORIA' ? 'Obligatoria' : 'Optativa'}</span>
+            </div>
+            <div class="popup-info-item">
+                <span class="popup-info-label">Área</span>
+                <span>${area}</span>
+            </div>
+            <div class="popup-info-item">
+                <span class="popup-info-label">Perfil</span>
+                <span>${perfil}</span>
             </div>
         `;
     }
@@ -490,6 +683,10 @@ function resetFormulario() {
     formNombre.value = '';
     formCreditos.value = '';
     formCreditosReq.value = '';
+    formSemestre.value = 'AMBOS';
+    formTipo.value = 'OBLIGATORIA';
+    formArea.value = '';
+    formPerfil.value = '';
     formTitulo.textContent = 'Agregar Materia';
     editandoId = null;
 
@@ -507,6 +704,10 @@ function editarMateria(materia) {
     formNombre.value = materia.nombre;
     formCreditos.value = materia.creditos;
     formCreditosReq.value = materia.previaCreditos || '';
+    formSemestre.value = materia.semestre || 'AMBOS';
+    formTipo.value = materia.tipo || 'OBLIGATORIA';
+    formArea.value = materia.area_id || '';
+    formPerfil.value = materia.perfil_id || '';
     formTitulo.textContent = 'Editar Materia';
 
     cargarMultiSelects(materia.id);
@@ -534,15 +735,28 @@ async function guardarMateria() {
     const nombre = formNombre.value.trim();
     const creditos = parseInt(formCreditos.value) || 0;
     const creditosReq = parseInt(formCreditosReq.value) || 0;
+    const semestre = formSemestre.value;
+    const tipo = formTipo.value;
+    const areaId = parseInt(formArea.value);
+    const perfilId = parseInt(formPerfil.value) || null;
 
     if (!nombre) {
         toast('Ingresá un nombre para la materia', true);
         return;
     }
 
+    if (!areaId) {
+        toast('Debés seleccionar un área', true);
+        return;
+    }
+
     const datos = {
         nombre,
         creditos,
+        semestre,
+        tipo,
+        areaId,
+        perfilId,
         previasAprobadas: obtenerSeleccionados('select-previas-aprobadas'),
         previasCurso: obtenerSeleccionados('select-previas-curso'),
         previasNoTener: obtenerSeleccionados('select-previas-no-tener'),
