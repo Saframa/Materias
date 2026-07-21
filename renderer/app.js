@@ -215,8 +215,9 @@ function initEventos() {
     // Popup materia - botones
     $('#popup-btn-cerrar').addEventListener('click', cerrarPopup);
     $('#popup-btn-editar').addEventListener('click', () => {
+        const materia = popupMateriaActual;
         cerrarPopup();
-        editarMateria(popupMateriaActual);
+        editarMateria(materia);
     });
     $('#popup-btn-eliminar').addEventListener('click', () => {
         const materia = popupMateriaActual;
